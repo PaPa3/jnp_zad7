@@ -17,38 +17,65 @@ using Image = Base_image<Color>;
 
 using Blend = Base_image<Fraction>;
 
+/** Creates constant image.
+ * @tparam T        - type of every pixel;
+ * @param t         - value of every pixel.
+ * @return Base_image that represents constant image.
+ */
 template<typename T>
-Base_image<T> constant(T t) {
-    return [t = std::move(t)](const Point &p) {
+Base_image<T> constant(const T &t) {
+    return [=](const Point &p) {
         (void) p;
         return t;
     };
 }
 
+/** Rotates an image by angle.
+ * @tparam T        - type of the image;
+ * @param image     - image to rotate;
+ * @param phi       - angle.
+ * @return Base_image that represents rotated image.
+ */
 template<typename T>
-Base_image<T> rotate(Base_image<T> image, double phi) {
+Base_image<T> rotate(const Base_image<T> &image, double phi) {
     return compose(to_polar,
-                   [image = std::move(image), phi](const Point &p) { return Point(p.first, p.second - phi, true); },
+                   [=](const Point &p) { return Point(p.first, p.second - phi, true); },
                    from_polar,
                    image);
 }
 
+/** Translates image by vector.
+ * @tparam T        - type of the image;
+ * @param image     - image to translate;
+ * @param v         - vector.
+ * @return Base_image that represents translated image.
+ */
 template<typename T>
-Base_image<T> translate(Base_image<T> image, const Vector v) {
+Base_image<T> translate(const Base_image<T> &image, const Vector &v) {
     return lift(image,
-                [image = std::move(image), v](const Point &p) {
-                    return Point(p.first - v.first, p.second - v.second);
-                });
+                [=](const Point &p) { return Point(p.first - v.first, p.second - v.second); });
 }
 
+/** Scales an image by value.
+ * @tparam T        - type of the image;
+ * @param image     - image;
+ * @param s         - value.
+ * @return Base_image that represents scaled image.
+ */
 template<typename T>
-Base_image<T> scale(Base_image<T> image, double s) {
+Base_image<T> scale(const Base_image<T> &image, double s) {
     return lift(image,
-                [image = std::move(image), s](const Point &p) {
-                    return Point(p.first / s, p.second / s);
-                });
+                [=](const Point &p) { return Point(p.first / s, p.second / s); });
 }
 
+/** Creates an image with circle.
+ * @tparam T        - type of the image;
+ * @param q         - middle of the circle;
+ * @param r         - radius of the circle;
+ * @param inner     - pixels inside the circle;
+ * @param outer     - pixels outside the circle.
+ * @return Base_image that represents image with circle.
+ */
 template<typename T>
 Base_image<T> circle(Point q, double r, T inner, T outer) {
     return [=](const Point &p) {
@@ -56,6 +83,13 @@ Base_image<T> circle(Point q, double r, T inner, T outer) {
     };
 }
 
+/** Creates an image with checker.
+ * @tparam T        - type of the image;
+ * @param d         - side length of squares in desired checker;
+ * @param this_way  - pixels on "black" pieces;
+ * @param that_way  - pixels on "white" pieces;
+ * @return Base_image that represents image with checker.
+ */
 template<typename T>
 Base_image<T> checker(double d, T this_way, T that_way) {
     return [=](const Point &p) {
@@ -65,6 +99,14 @@ Base_image<T> checker(double d, T this_way, T that_way) {
     };
 }
 
+/** Creates an image with checker in polar axis.
+ * @tparam T        - type of the image;
+ * @param d         - length of pieces in desired checker;
+ * @param n         - number of radiant pieces;
+ * @param this_way  - pixels on "black" pieces;
+ * @param that_way  - pixels on "white" pieces;
+ * @return Base_image that represents image with checker in polar axis.
+ */
 template<typename T>
 Base_image<T> polar_checker(double d, int n, T this_way, T that_way) {
     return compose(to_polar,
@@ -72,11 +114,26 @@ Base_image<T> polar_checker(double d, int n, T this_way, T that_way) {
                    checker(d, this_way, that_way));
 }
 
+/** Creates an image with rings.
+ * @tparam T        - type of the image;
+ * @param q         - middle of the circle;
+ * @param d         - width of each ring;
+ * @param this_way  - pixels on pieces inside rings;
+ * @param that_way  - pixels on pieces outside rings.
+ * @return Base_image that represents image with rings.
+ */
 template<typename T>
 Base_image<T> rings(Point q, double d, T this_way, T that_way) {
     return translate(polar_checker(d, 1, this_way, that_way), Vector(q.first, q.second));
 }
 
+/** Creates an image with vertical stripe.
+ * @tparam T        - type of the image;
+ * @param d         - width of the stripe;
+ * @param this_way  - pixels inside the stripe;
+ * @param that_way  - pixels outside the stripe.
+ * @return Base_image that represents image vertical stripe.
+ */
 template<typename T>
 Base_image<T> vertical_stripe(double d, T this_way, T that_way) {
     return [=](const Point &p) {
@@ -84,12 +141,34 @@ Base_image<T> vertical_stripe(double d, T this_way, T that_way) {
     };
 }
 
-Image cond(const Region &region, const Image &this_way, const Image &that_way);
+/** Puts one image on another.
+ * @param region    - region containing first image;
+ * @param this_way  - first image;
+ * @param that_way  - second image.
+ * @return Image that represents one image on another.
+ */
+Image cond(const Region& region, const Image& this_way, const Image& that_way);
 
-Image lerp(const Blend &blend, const Image &this_way, const Image &that_way);
+/** Mixes two images.
+ * @param blend     - percent of first image in result;
+ * @param this_way  - first image;
+ * @param that_way  - second image.
+ * @return Image that represents two mixed images
+ */
+Image lerp(const Blend& blend, const Image& this_way, const Image& that_way);
 
-Image darken(const Image &image, const Blend &blend);
+/** Mixes image with black image.
+ * @param image     - image.
+ * @param blend     - percent of given image in result;
+ * @return Image that represents two mixed images
+ */
+Image darken(const Image& image, const Blend& blend);
 
-Image lighten(const Image &image, const Blend &blend);
+/** Mixes image with white image.
+ * @param image     - image.
+ * @param blend     - percent of given image in result;
+ * @return Image that represents two mixed images
+ */
+Image lighten(const Image& image, const Blend& blend);
 
 #endif //IMAGES_H
