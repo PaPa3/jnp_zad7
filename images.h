@@ -23,7 +23,7 @@ using Blend = Base_image<Fraction>;
  * @return Base_image that represents constant image.
  */
 template<typename T>
-Base_image<T> constant(const T &t) {
+inline Base_image<T> constant(const T &t) {
     return [=](const Point &p) {
         (void) p;
         return t;
@@ -37,7 +37,7 @@ Base_image<T> constant(const T &t) {
  * @return Base_image that represents rotated image.
  */
 template<typename T>
-Base_image<T> rotate(const Base_image<T> &image, double phi) {
+inline Base_image<T> rotate(const Base_image<T> &image, double phi) {
     return compose(to_polar,
                    [=](const Point &p) { return Point(p.first, p.second - phi, true); },
                    from_polar,
@@ -51,7 +51,7 @@ Base_image<T> rotate(const Base_image<T> &image, double phi) {
  * @return Base_image that represents translated image.
  */
 template<typename T>
-Base_image<T> translate(const Base_image<T> &image, const Vector &v) {
+inline Base_image<T> translate(const Base_image<T> &image, const Vector &v) {
     return lift(image,
                 [=](const Point &p) { return Point(p.first - v.first, p.second - v.second); });
 }
@@ -63,7 +63,7 @@ Base_image<T> translate(const Base_image<T> &image, const Vector &v) {
  * @return Base_image that represents scaled image.
  */
 template<typename T>
-Base_image<T> scale(const Base_image<T> &image, double s) {
+inline Base_image<T> scale(const Base_image<T> &image, double s) {
     return lift(image,
                 [=](const Point &p) { return Point(p.first / s, p.second / s); });
 }
@@ -77,7 +77,7 @@ Base_image<T> scale(const Base_image<T> &image, double s) {
  * @return Base_image that represents image with circle.
  */
 template<typename T>
-Base_image<T> circle(Point q, double r, T inner, T outer) {
+inline Base_image<T> circle(const Point &q, double r, const T &inner, const T &outer) {
     return [=](const Point &p) {
         return distance(q, p) < r ? inner : outer;
     };
@@ -91,7 +91,7 @@ Base_image<T> circle(Point q, double r, T inner, T outer) {
  * @return Base_image that represents image with checker.
  */
 template<typename T>
-Base_image<T> checker(double d, T this_way, T that_way) {
+inline Base_image<T> checker(double d, const T &this_way, const T &that_way) {
     return [=](const Point &p) {
         int x = std::floor(p.first / d);
         int y = std::floor(p.second / d);
@@ -108,7 +108,7 @@ Base_image<T> checker(double d, T this_way, T that_way) {
  * @return Base_image that represents image with checker in polar axis.
  */
 template<typename T>
-Base_image<T> polar_checker(double d, int n, T this_way, T that_way) {
+inline Base_image<T> polar_checker(double d, int n, const T &this_way, const T &that_way) {
     return compose(to_polar,
                    [=](const Point &p) { return Point(p.first, p.second * d * n / (2 * M_PI), true); },
                    checker(d, this_way, that_way));
@@ -123,7 +123,7 @@ Base_image<T> polar_checker(double d, int n, T this_way, T that_way) {
  * @return Base_image that represents image with rings.
  */
 template<typename T>
-Base_image<T> rings(Point q, double d, T this_way, T that_way) {
+inline Base_image<T> rings(const Point &q, double d, const T &this_way, const T &that_way) {
     return translate(polar_checker(d, 1, this_way, that_way), Vector(q.first, q.second));
 }
 
@@ -135,7 +135,7 @@ Base_image<T> rings(Point q, double d, T this_way, T that_way) {
  * @return Base_image that represents image vertical stripe.
  */
 template<typename T>
-Base_image<T> vertical_stripe(double d, T this_way, T that_way) {
+inline Base_image<T> vertical_stripe(double d, const T &this_way, const T &that_way) {
     return [=](const Point &p) {
         return std::abs(p.first) * 2 < d ? this_way : that_way;
     };
@@ -147,7 +147,11 @@ Base_image<T> vertical_stripe(double d, T this_way, T that_way) {
  * @param that_way  - second image.
  * @return Image that represents one image on another.
  */
-Image cond(const Region& region, const Image& this_way, const Image& that_way);
+inline Image cond(const Region &region, const Image &this_way, const Image &that_way) {
+    return [=](const Point &p) {
+        return region(p) ? this_way(p) : that_way(p);
+    };
+}
 
 /** Mixes two images.
  * @param blend     - percent of first image in result;
@@ -155,20 +159,30 @@ Image cond(const Region& region, const Image& this_way, const Image& that_way);
  * @param that_way  - second image.
  * @return Image that represents two mixed images
  */
-Image lerp(const Blend& blend, const Image& this_way, const Image& that_way);
+inline Image lerp(const Blend &blend, const Image &this_way, const Image &that_way) {
+    return [=](const Point &p) {
+        return this_way(p).weighted_mean(that_way(p), blend(p));
+    };
+}
 
 /** Mixes image with black image.
  * @param image     - image.
  * @param blend     - percent of given image in result;
  * @return Image that represents two mixed images
  */
-Image darken(const Image& image, const Blend& blend);
+inline Image darken(const Image& image, const Blend& blend) {
+    static const Image black = constant<Color>(Colors::black);
+    return lerp(blend, image, black);
+}
 
 /** Mixes image with white image.
  * @param image     - image.
  * @param blend     - percent of given image in result;
  * @return Image that represents two mixed images
  */
-Image lighten(const Image& image, const Blend& blend);
+inline Image lighten(const Image& image, const Blend& blend) {
+    static const Image white = constant<Color>(Colors::white);
+    return lerp(blend, image, white);
+}
 
 #endif //IMAGES_H
