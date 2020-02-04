@@ -170,7 +170,7 @@ inline Image lerp(const Blend &blend, const Image &this_way, const Image &that_w
  * @param blend     - percent of given image in result;
  * @return Image that represents two mixed images
  */
-inline Image darken(const Image& image, const Blend& blend) {
+inline Image darken(const Image &image, const Blend &blend) {
     static const Image black = constant<Color>(Colors::black);
     return lerp(blend, image, black);
 }
@@ -180,7 +180,7 @@ inline Image darken(const Image& image, const Blend& blend) {
  * @param blend     - percent of given image in result;
  * @return Image that represents two mixed images
  */
-inline Image lighten(const Image& image, const Blend& blend) {
+inline Image lighten(const Image &image, const Blend &blend) {
     static const Image white = constant<Color>(Colors::white);
     return lerp(blend, image, white);
 }
