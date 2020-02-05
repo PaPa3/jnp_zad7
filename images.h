@@ -23,9 +23,8 @@ using Blend = Base_image<Fraction>;
  * @return Base_image that represents constant image.
  */
 template<typename T>
-inline Base_image<T> constant(const T &t) {
-    return [=](const Point &p) {
-        (void) p;
+Base_image<T> constant(const T &t) {
+    return [=](const Point) {
         return t;
     };
 }
@@ -37,9 +36,11 @@ inline Base_image<T> constant(const T &t) {
  * @return Base_image that represents rotated image.
  */
 template<typename T>
-inline Base_image<T> rotate(const Base_image<T> &image, double phi) {
+Base_image<T> rotate(const Base_image<T> &image, double phi) {
     return compose(to_polar,
-                   [=](const Point &p) { return Point(p.first, p.second - phi, true); },
+                   [=](const Point p) {
+                       return Point(p.first, p.second - phi, true);
+                   },
                    from_polar,
                    image);
 }
@@ -51,9 +52,11 @@ inline Base_image<T> rotate(const Base_image<T> &image, double phi) {
  * @return Base_image that represents translated image.
  */
 template<typename T>
-inline Base_image<T> translate(const Base_image<T> &image, const Vector &v) {
+Base_image<T> translate(const Base_image<T> &image, const Vector &v) {
     return lift(image,
-                [=](const Point &p) { return Point(p.first - v.first, p.second - v.second); });
+                [=](const Point p) {
+                    return Point(p.first - v.first, p.second - v.second);
+                });
 }
 
 /** Scales an image by value.
@@ -63,9 +66,11 @@ inline Base_image<T> translate(const Base_image<T> &image, const Vector &v) {
  * @return Base_image that represents scaled image.
  */
 template<typename T>
-inline Base_image<T> scale(const Base_image<T> &image, double s) {
+Base_image<T> scale(const Base_image<T> &image, double s) {
     return lift(image,
-                [=](const Point &p) { return Point(p.first / s, p.second / s); });
+                [=](const Point p) {
+                    return Point(p.first / s, p.second / s);
+                });
 }
 
 /** Creates an image with circle.
@@ -77,9 +82,9 @@ inline Base_image<T> scale(const Base_image<T> &image, double s) {
  * @return Base_image that represents image with circle.
  */
 template<typename T>
-inline Base_image<T> circle(const Point &q, double r, const T &inner, const T &outer) {
-    return [=](const Point &p) {
-        return distance(q, p) < r ? inner : outer;
+Base_image<T> circle(const Point &q, double r, const T &inner, const T &outer) {
+    return [=](const Point p) {
+        return distance(q, p) > r ? outer : inner;
     };
 }
 
@@ -91,10 +96,10 @@ inline Base_image<T> circle(const Point &q, double r, const T &inner, const T &o
  * @return Base_image that represents image with checker.
  */
 template<typename T>
-inline Base_image<T> checker(double d, const T &this_way, const T &that_way) {
-    return [=](const Point &p) {
-        int x = std::floor(p.first / d);
-        int y = std::floor(p.second / d);
+Base_image<T> checker(double d, const T &this_way, const T &that_way) {
+    return [=](const Point p) {
+        int x = floor(p.first / d);
+        int y = floor(p.second / d);
         return (x + y) % 2 == 0 ? this_way : that_way;
     };
 }
@@ -108,9 +113,11 @@ inline Base_image<T> checker(double d, const T &this_way, const T &that_way) {
  * @return Base_image that represents image with checker in polar axis.
  */
 template<typename T>
-inline Base_image<T> polar_checker(double d, int n, const T &this_way, const T &that_way) {
+Base_image<T> polar_checker(double d, int n, const T &this_way, const T &that_way) {
     return compose(to_polar,
-                   [=](const Point &p) { return Point(p.first, p.second * d * n / (2 * M_PI), true); },
+                   [=](const Point p) {
+                       return Point(p.first, p.second * d * n / (2 * M_PI), true);
+                   },
                    checker(d, this_way, that_way));
 }
 
@@ -123,8 +130,9 @@ inline Base_image<T> polar_checker(double d, int n, const T &this_way, const T &
  * @return Base_image that represents image with rings.
  */
 template<typename T>
-inline Base_image<T> rings(const Point &q, double d, const T &this_way, const T &that_way) {
-    return translate(polar_checker(d, 1, this_way, that_way), Vector(q.first, q.second));
+Base_image<T> rings(const Point &q, double d, const T &this_way, const T &that_way) {
+    return translate(polar_checker(d, 1, this_way, that_way),
+                     Vector(q.first, q.second));
 }
 
 /** Creates an image with vertical stripe.
@@ -135,9 +143,9 @@ inline Base_image<T> rings(const Point &q, double d, const T &this_way, const T 
  * @return Base_image that represents image vertical stripe.
  */
 template<typename T>
-inline Base_image<T> vertical_stripe(double d, const T &this_way, const T &that_way) {
-    return [=](const Point &p) {
-        return std::abs(p.first) * 2 < d ? this_way : that_way;
+Base_image<T> vertical_stripe(double d, const T &this_way, const T &that_way) {
+    return [=](const Point p) {
+        return std::abs(p.first) * 2 > d ? that_way : this_way;
     };
 }
 
@@ -148,7 +156,7 @@ inline Base_image<T> vertical_stripe(double d, const T &this_way, const T &that_
  * @return Image that represents one image on another.
  */
 inline Image cond(const Region &region, const Image &this_way, const Image &that_way) {
-    return [=](const Point &p) {
+    return [=](const Point p) {
         return region(p) ? this_way(p) : that_way(p);
     };
 }
@@ -160,9 +168,14 @@ inline Image cond(const Region &region, const Image &this_way, const Image &that
  * @return Image that represents two mixed images
  */
 inline Image lerp(const Blend &blend, const Image &this_way, const Image &that_way) {
-    return [=](const Point &p) {
-        return this_way(p).weighted_mean(that_way(p), blend(p));
+    static auto lerpInPoint = [](double blend, Color this_way, Color that_way) {
+        return this_way.weighted_mean(that_way, blend);
     };
+
+    return lift(lerpInPoint,
+                blend,
+                this_way,
+                that_way);
 }
 
 /** Mixes image with black image.

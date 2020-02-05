@@ -10,6 +10,22 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+int xd;
+
+struct d {
+    int a;
+    d(int a) : a(a) {}
+    ~d() {
+        for (int i = 0; i < 1000000; i++) {
+            xd = (xd + a) % (i + 3 * a + 1);
+            a *= (i + 1);
+            if (a == 0) {
+                a = 1;
+            }
+        }
+    }
+};
+
 int
 main() {
     const uint32_t width = 400;
@@ -93,4 +109,10 @@ main() {
     };
     assert(lift(h1, f1, f2)(42) == 42 * 42);
     assert(lift(h2, f1, f2)(42) == 42 + 42);
+
+    cout << sizeof(Image) << endl;
+    cout << sizeof(Blend) << endl;
+    cout << sizeof(int) << endl;
+    cout << sizeof(Vector) << endl;
+    cout << sizeof(Point) << endl;
 }
