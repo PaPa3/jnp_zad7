@@ -167,16 +167,7 @@ inline Image cond(const Region &region, const Image &this_way, const Image &that
  * @param that_way  - second image.
  * @return Image that represents two mixed images
  */
-inline Image lerp(const Blend &blend, const Image &this_way, const Image &that_way) {
-    static auto lerpInPoint = [](double blend, Color this_way, Color that_way) {
-        return this_way.weighted_mean(that_way, blend);
-    };
-
-    return lift(lerpInPoint,
-                blend,
-                this_way,
-                that_way);
-}
+Image lerp(const Blend &blend, const Image &this_way, const Image &that_way);
 
 /** Mixes image with black image.
  * @param image     - image.
@@ -184,8 +175,9 @@ inline Image lerp(const Blend &blend, const Image &this_way, const Image &that_w
  * @return Image that represents two mixed images
  */
 inline Image darken(const Image &image, const Blend &blend) {
-    static const Image black = constant<Color>(Colors::black);
-    return lerp(blend, image, black);
+    return lerp(blend,
+                image,
+                constant<Color>(Colors::black));
 }
 
 /** Mixes image with white image.
@@ -194,8 +186,9 @@ inline Image darken(const Image &image, const Blend &blend) {
  * @return Image that represents two mixed images
  */
 inline Image lighten(const Image &image, const Blend &blend) {
-    static const Image white = constant<Color>(Colors::white);
-    return lerp(blend, image, white);
+    return lerp(blend,
+                image,
+                constant<Color>(Colors::white));
 }
 
 #endif //IMAGES_H
